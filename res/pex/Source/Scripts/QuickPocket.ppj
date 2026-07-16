@@ -1,0 +1,39 @@
+<?xml version='1.0'?>
+<!-- Game is either sse, tesv, or fo4 -->
+<PapyrusProject xmlns="PapyrusProject.xsd"
+    Flags="TESV_Papyrus_Flags.flg"
+    Game="sse"
+    Output="../../Scripts"
+    Optimize="true"
+    Anonymize="true"
+    Zip="true">
+    <Variables>
+        <Variable Name="ModName" Value="QuickPocket"/>
+        <Variable Name="ThisProject" Value="."/>
+        <Variable Name="Rel" Value="../../../../.release"/>
+        <Variable Name="MO2" Value="Z:/mnt/Games/Modding/MO2/mods/"/>
+        <Variable Name="Ver" Value="v1.0.0"/>
+    </Variables>
+    <Imports>
+        <!-- Project and Resources -->
+        <Import>@ThisProject</Import>
+        <Import>@MO2/Skyrim Script Extender (SKSE64) - 1.6.1170/Source/Scripts</Import>
+        <Import>@MO2/PapyrusUtil AE SE - Scripting Utility Functions - 1.6.1170/Source/Scripts</Import>
+        <Import>@MO2/SkyUI SE/Source/Scripts</Import>
+        <!-- Stock Game -->
+        <Import>Z:/mnt/Games/Modding/MO2/Game Root/Data/Source/Scripts</Import>
+    </Imports>
+    <Folders>
+        <Folder>@ThisProject</Folder>
+    </Folders>
+    <ZipFiles Output="@Rel">
+        <ZipFile Name="@ModName - @Ver" RootDir="../../@ThisProject" Compression="deflate">
+            <Match>*.esp</Match>
+            <Include>Scripts</Include>
+            <Include Path="Source/Scripts">*.psc</Include>
+            <Include>SKSE</Include>
+            <!-- <Include>Sound</Include>
+            <Include>Meshes</Include> -->
+        </ZipFile>
+    </ZipFiles>
+</PapyrusProject>

@@ -1,0 +1,23 @@
+## Build artifacts
+CMakeUserPresets.json
+vcpkg_installed/
+build/
+dist/
+.vs*/
+.xmake/
+vsxmake*
+*.zip
+
+## Generated game/script outputs
+*.esp
+*.pex
+res/pex/Scripts/
+res/dll/
+.release/
+
+## Local environment files
+*.code-workspace
+.vscode.bak
+*.bat
+*.bak
+.git.broken.bak/

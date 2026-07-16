@@ -1,0 +1,17 @@
+SpriggitSource:
+  PackageName: 0.36.13
+  Version: ''
+ModKey: QuickPocket.esp
+GameRelease: SkyrimSE
+ModHeader:
+  Flags:
+  - Small
+  Author: QuickPocket Team
+  MasterReferences:
+  - Master: Skyrim.esm
+    FileSize: 0
+  - Master: Update.esm
+    FileSize: 0
+  - Master: SkyUI_SE.esp
+    FileSize: 0
+  INTV: 1

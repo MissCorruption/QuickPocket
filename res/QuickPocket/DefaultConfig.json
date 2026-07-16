@@ -1,0 +1,11 @@
+{
+  "KeybindingNewFormat": 1,
+  "Enabled": 1,
+  "LogLevel": 0,
+  "KeybindingPlantModeToggle": -1,
+  "PlantAllowPoisons": 1,
+  "PlantAllowJewelry": 1,
+  "PlantAllowOtherItems": 0,
+  "PlantAllowEquipped": 0,
+  "CloseOnDetection": 0
+}
