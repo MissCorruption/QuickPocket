@@ -163,15 +163,22 @@ jobs:
         with:
           submodules: recursive
 
+      - name: CommonLib revision
+        id: commonlib
+        shell: bash
+        run: echo "sha=$(git -C extern/CommonLibSSE-NG rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Set xmake env
         shell: pwsh
         run: |
           echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $env:GITHUB_ENV
           echo "XMAKE_ROOT=y" >> $env:GITHUB_ENV
+          echo "XMAKE_ACTION_BUILD_CACHE=true" >> $env:GITHUB_ENV
 
       - name: Create xmake cache directories
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/packages" | Out-Null
           New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/xmake-cache" | Out-Null
           New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/build-cache" | Out-Null
 
@@ -179,29 +186,30 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.xmake/packages
-            ${{ env.XMAKE_GLOBALDIR }}/xmake-cache
-          key: xmake-deps-${{ runner.os }}-${{ hashFiles('xmake.lua', '.gitmodules') }}
+            ${{ runner.workspace }}/xmake-global/packages
+            ${{ runner.workspace }}/xmake-global/xmake-cache
+          key: ${{ runner.os }}-xmake-deps-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', '.gitmodules', 'extern/CommonLibSSE-NG/xmake.lua', 'extern/CommonLibSSE-NG/xmake-rules.lua') }}
           restore-keys: |
-            xmake-deps-${{ runner.os }}-
+            ${{ runner.os }}-xmake-deps-${{ steps.commonlib.outputs.sha }}-
+            ${{ runner.os }}-xmake-deps-
 
-      - name: Cache xmake build cache
+      - name: Cache xmake ccache
         uses: actions/cache@v5
         with:
-          path: ${{ env.XMAKE_GLOBALDIR }}/build-cache
-          key: xmake-build-${{ runner.os }}-${{ github.ref_name }}
+          path: ${{ runner.workspace }}/xmake-global/build-cache
+          key: ${{ runner.os }}-xmake-ccache-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', 'src/**/*', 'include/**/*') }}
           restore-keys: |
-            xmake-build-${{ runner.os }}-
+            ${{ runner.os }}-xmake-ccache-${{ steps.commonlib.outputs.sha }}-
+            ${{ runner.os }}-xmake-ccache-
 
       - name: Setup xmake
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
-          actions-cache-folder: ${{ env.XMAKE_GLOBALDIR }}/xmake-cache
+          actions-cache-folder: ${{ runner.workspace }}/xmake-global/xmake-cache
           actions-cache-key: ".xmake-actions-cache"
-          build-cache: true
-          build-cache-path: ${{ env.XMAKE_GLOBALDIR }}/build-cache
-          build-cache-key: xmake-build-${{ runner.os }}-${{ github.ref_name }}
+          build-cache: false
+          package-cache: false
 
       - name: Validate CommonLib submodule
         shell: pwsh
@@ -220,8 +228,9 @@ jobs:
       - name: Compile plugin
         shell: pwsh
         run: |
-          xmake f -y -m release -p windows -a x64
-          xmake -vD
+          $ccacheDir = "${{ runner.workspace }}/xmake-global/build-cache"
+          xmake f -y -m release -p windows -a x64 --policies=build.ccache:y --ccachedir="$ccacheDir"
+          xmake -y
 
       - name: Upload SKSE plugin artifact
         uses: actions/upload-artifact@v7
