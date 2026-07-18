@@ -21,7 +21,7 @@ jobs:
       version: ${{ steps.get-version.outputs.VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Get version
@@ -35,13 +35,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Cache Spriggit
         id: cache-spriggit
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .github/spriggit
           key: ${{ runner.os }}-spriggit-cli
@@ -60,7 +60,7 @@ jobs:
         run: .github\spriggit\Spriggit.CLI.exe deserialize --InputPath "res\esp" --OutputPath "res\esp\QuickPocket.esp"
 
       - name: Upload ESP Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quickpocket-esp
           path: res/esp/QuickPocket.esp
@@ -71,13 +71,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Cache Script Sources
         id: cache-ss
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .github/Papyrus/SRC
@@ -88,7 +88,7 @@ jobs:
 
       - name: Cache Compiler
         id: cache-caprica
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .github/Caprica
           key: caprica-0.3.0a
@@ -148,7 +148,7 @@ jobs:
         run: .github/Caprica/Caprica.exe --game skyrim --import ".github/Papyrus/SRC;.github/Papyrus/SRC_SKYUI;.github/Papyrus/SRC_PAPUTIL;" --output "res/pex/Scripts" --flags=".github/Papyrus/SRC/TESV_Papyrus_Flags.flg" "${{ github.workspace }}/res/pex/Source/Scripts" -R -q
 
       - name: Upload Scripts Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quickpocket-scripts
           path: res/pex/Scripts
@@ -159,7 +159,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -176,7 +176,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/build-cache" | Out-Null
 
       - name: Cache xmake dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.xmake/packages
@@ -186,7 +186,7 @@ jobs:
             xmake-deps-${{ runner.os }}-
 
       - name: Cache xmake build cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.XMAKE_GLOBALDIR }}/build-cache
           key: xmake-build-${{ runner.os }}-${{ github.ref_name }}
@@ -224,7 +224,7 @@ jobs:
           xmake -vD
 
       - name: Upload SKSE plugin artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quickpocket-dll
           path: |
@@ -236,24 +236,24 @@ jobs:
     needs: [prepare, build-plugin, compile-scripts, compile-skse]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Download ESP Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: quickpocket-esp
           path: res/esp
 
       - name: Download Scripts Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: quickpocket-scripts
           path: res/pex/Scripts
 
       - name: Download DLL Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: quickpocket-dll
           path: res/dll/SKSE/Plugins
@@ -271,13 +271,13 @@ jobs:
           cp -a res/QuickPocket/. to-pack/
 
       - name: Zip package
-        uses: vimtor/action-zip@v1.2
+        uses: vimtor/action-zip@v1.3
         with:
           files: to-pack/.
           dest: QuickPocket-${{ needs.prepare.outputs.version }}.zip
 
       - name: Upload package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: QuickPocket-${{ needs.prepare.outputs.version }}
           path: QuickPocket-${{ needs.prepare.outputs.version }}.zip
