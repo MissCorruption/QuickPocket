@@ -60,6 +60,7 @@ target(PROJECT_NAME)
         "cl::/diagnostics:caret",
         "cl::/FS",
         "cl::/DNOMINMAX",
+        "cl::/external:anglebrackets",
         "cl::/external:W0",
         "cl::/fp:contract",
         "cl::/fp:except-",
@@ -71,8 +72,10 @@ target(PROJECT_NAME)
     )
     add_cxxflags(
         "cl::/wd4068",
+        "cl::/wd4127",
         "cl::/wd4200",
-        "cl::/wd4201"
+        "cl::/wd4201",
+        "cl::/wd4245"
     )
 
     if is_mode("release", "releasedbg") then
