@@ -32,7 +32,7 @@ jobs:
   build-plugin:
     name: Build ESP from Spriggit files
     needs: prepare
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -68,7 +68,7 @@ jobs:
   compile-scripts:
     name: Compile Papyrus scripts
     needs: prepare
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -156,6 +156,9 @@ jobs:
   compile-skse:
     name: Compile SKSE plugin (xmake)
     needs: prepare
+    # Match CommonLib's prebuilt bundle toolset (built on windows-latest). On a
+    # release-tag submodule, xmake auto-fetches that .lib in GITHUB_ACTIONS; linking
+    # it on windows-2022 fails with LNK2001 (__std_replace_copy_2, etc.).
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -173,14 +176,12 @@ jobs:
         run: |
           echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $env:GITHUB_ENV
           echo "XMAKE_ROOT=y" >> $env:GITHUB_ENV
-          echo "XMAKE_ACTION_BUILD_CACHE=true" >> $env:GITHUB_ENV
 
       - name: Create xmake cache directories
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/packages" | Out-Null
           New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/xmake-cache" | Out-Null
-          New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/build-cache" | Out-Null
 
       - name: Cache xmake dependencies
         uses: actions/cache@v5
@@ -188,19 +189,7 @@ jobs:
           path: |
             ${{ runner.workspace }}/xmake-global/packages
             ${{ runner.workspace }}/xmake-global/xmake-cache
-          key: ${{ runner.os }}-xmake-deps-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', '.gitmodules', 'extern/CommonLibSSE-NG/xmake.lua', 'extern/CommonLibSSE-NG/xmake-rules.lua') }}
-          restore-keys: |
-            ${{ runner.os }}-xmake-deps-${{ steps.commonlib.outputs.sha }}-
-            ${{ runner.os }}-xmake-deps-
-
-      - name: Cache xmake ccache
-        uses: actions/cache@v5
-        with:
-          path: ${{ runner.workspace }}/xmake-global/build-cache
-          key: ${{ runner.os }}-xmake-ccache-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', 'src/**/*', 'include/**/*') }}
-          restore-keys: |
-            ${{ runner.os }}-xmake-ccache-${{ steps.commonlib.outputs.sha }}-
-            ${{ runner.os }}-xmake-ccache-
+          key: windows-latest-xmake-deps-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', '.gitmodules', 'extern/CommonLibSSE-NG/xmake.lua', 'extern/CommonLibSSE-NG/xmake-rules.lua') }}
 
       - name: Setup xmake
         uses: xmake-io/github-action-setup-xmake@v1
@@ -228,8 +217,8 @@ jobs:
       - name: Compile plugin
         shell: pwsh
         run: |
-          $ccacheDir = "${{ runner.workspace }}/xmake-global/build-cache"
-          xmake f -y -m release -p windows -a x64 --policies=build.ccache:y --ccachedir="$ccacheDir"
+          # releasedbg matches the CommonLib prebuilt bundle ABI (see PREBUILT.md).
+          xmake f -y -m releasedbg -p windows -a x64
           xmake -y
 
       - name: Upload SKSE plugin artifact
@@ -237,8 +226,8 @@ jobs:
         with:
           name: quickpocket-dll
           path: |
-            build/windows/x64/release/QuickPocket.dll
-            build/windows/x64/release/QuickPocket.pdb
+            build/windows/x64/releasedbg/QuickPocket.dll
+            build/windows/x64/releasedbg/QuickPocket.pdb
 
   package-mod:
     runs-on: ubuntu-latest
