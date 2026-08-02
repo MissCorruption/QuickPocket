@@ -164,17 +164,8 @@ void QuickPocket::UiHandlers::OnModifyButtonBar(QuickLoot::API::ModifyButtonBarE
 			continue;
 		}
 
-		switch (button.action) {
-		case QuickLoot::API::QuickLootAction::kTake:
-			button.label = "$Give";
-			break;
-
-		case QuickLoot::API::QuickLootAction::kTakeAll:
-			button.label = "$GiveAll";
-			break;
-
-		default:
-			break;
+		if (button.action == QuickLoot::API::QuickLootAction::kTake) {
+			button.label = "$qp_Plant";
 		}
 	}
 }
