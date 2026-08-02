@@ -8,10 +8,10 @@
 
 #include "QuickPocket/LogSettings.h"
 #include "QuickPocket/EventHandlers.h"
-#include "QuickPocket/HoverController.h"
 #include "QuickPocket/Papyrus.h"
-#include "QuickPocket/PlantModeController.h"
+#include "QuickPocket/PlantInput.h"
 #include "QuickPocket/QuickLootBridge.h"
+#include "QuickPocket/Targeting.h"
 
 namespace
 {
@@ -60,8 +60,8 @@ namespace
 			}
 
 			QuickPocket::EventHandlers::Install();
-			QuickPocket::HoverController::Start();
-			QuickPocket::PlantModeController::Install();
+			QuickPocket::Targeting::Start();
+			QuickPocket::PlantInput::Install();
 			SKSE::log::info("[QP] QuickPocket initialized.");
 		}
 	}

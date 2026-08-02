@@ -23,11 +23,14 @@ add_library(
     src/Config.cpp
     src/ChanceService.cpp
     src/QuickLootBridge.cpp
-    src/HoverController.cpp
+    src/Targeting.cpp
     src/Papyrus.cpp
     src/PickpocketRules.cpp
-    src/PlantModeController.cpp
+    src/PickpocketSession.cpp
+    src/PlantInput.cpp
     src/EventHandlers.cpp
+    src/UiHandlers.cpp
+    src/Transfer.cpp
     src/main.cpp
 )
 
