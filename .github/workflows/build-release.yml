@@ -1,0 +1,281 @@
+name: Build Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "*.md"
+      - "*.txt"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version"
+        required: false
+        default: "Nightly"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Get version
+        id: get-version
+        shell: bash
+        run: echo "VERSION=${{ inputs.version || 'Nightly' }}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+  build-plugin:
+    name: Build ESP from Spriggit files
+    needs: prepare
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Cache Spriggit
+        id: cache-spriggit
+        uses: actions/cache@v5
+        with:
+          path: .github/spriggit
+          key: ${{ runner.os }}-spriggit-cli
+
+      - name: Fetch Spriggit
+        if: steps.cache-spriggit.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release download -R Mutagen-Modding/Spriggit --pattern "SpriggitCLI.zip" --dir .github
+          7z x .github/SpriggitCLI.zip -o".github/spriggit/"
+
+      - name: Run Spriggit
+        shell: cmd
+        run: |
+          if not exist build\install mkdir build\install
+          .github\spriggit\Spriggit.CLI.exe deserialize --InputPath "res\esp" --OutputPath "build\install\QuickPocket.esp"
+
+      - name: Upload ESP Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: quickpocket-esp
+          path: build/install/QuickPocket.esp
+
+  compile-scripts:
+    name: Compile Papyrus scripts
+    needs: prepare
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Cache Script Sources
+        id: cache-ss
+        uses: actions/cache@v5
+        with:
+          path: |
+            .github/Papyrus/SRC
+            .github/Papyrus/SRC_SKYUI
+            .github/Papyrus/SRC_PAPUTIL
+            .github/Papyrus/SRC/TESV_Papyrus_Flags.flg
+          key: papyrus-sources-cache
+
+      - name: Cache Compiler
+        id: cache-caprica
+        uses: actions/cache@v5
+        with:
+          path: .github/Caprica
+          key: caprica-0.3.0a
+
+      - name: Fetch Caprica
+        if: steps.cache-caprica.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Path .github -Force | Out-Null
+          gh release download 0.3.0a -R KrisV-777/Caprica --pattern "Caprica.zip" --dir .github --clobber
+          7z x .github/Caprica.zip "-o.github\Caprica" -y
+
+          if (-not (Test-Path ".github/Caprica/Caprica.exe")) {
+            Write-Error "Caprica.exe not found after extraction."
+            exit 1
+          }
+
+      - name: Checkout Papyrus Sources
+        if: steps.cache-ss.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          mkdir .github/Papyrus
+          $repos = @("SRC", "SRC_SKYUI", "SRC_PAPUTIL")
+          Set-Location .github/Papyrus
+          foreach ($repo in $repos) {
+            New-Item -ItemType Directory -Name $repo
+            Set-Location $repo
+            git init
+            git remote add origin https://github.com/IHateMyKite/PAPYRUS.git
+            git sparse-checkout set --no-cone $repo
+            git fetch --depth=1 origin main
+            git checkout main
+            Remove-Item .git -Recurse -Force
+            Set-Location ..
+          }
+
+      - name: Checkout TESV Flags File
+        if: steps.cache-ss.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          cd .github/Papyrus/SRC
+          mkdir temp
+          cd temp
+          git init
+          git remote add origin https://github.com/Rukan/Grimy-Skyrim-Papyrus-Source.git
+          git sparse-checkout set --no-cone 'TESV_Papyrus_Flags.flg'
+          git fetch --depth=1 origin master
+          git checkout master
+          Remove-Item .git -Recurse -Force
+          mv TESV_Papyrus_Flags.flg ../TESV_Papyrus_Flags.flg
+          Set-Location ..
+          Remove-Item temp -Recurse -Force
+
+      - name: Run Caprica
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "build/install/Scripts" | Out-Null
+          .github/Caprica/Caprica.exe --game skyrim --import ".github/Papyrus/SRC;.github/Papyrus/SRC_SKYUI;.github/Papyrus/SRC_PAPUTIL;" --output "build/install/Scripts" --flags=".github/Papyrus/SRC/TESV_Papyrus_Flags.flg" "${{ github.workspace }}/res/Source/Scripts" -R -q
+
+      - name: Upload Scripts Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: quickpocket-scripts
+          path: build/install/Scripts
+
+  compile-skse:
+    name: Compile SKSE plugin (xmake)
+    needs: prepare
+    # Match CommonLib's prebuilt bundle toolset (built on windows-latest). On a
+    # release-tag submodule, xmake auto-fetches that .lib in GITHUB_ACTIONS; linking
+    # it on windows-2022 fails with LNK2001 (__std_replace_copy_2, etc.).
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: CommonLib revision
+        id: commonlib
+        shell: bash
+        run: echo "sha=$(git -C lib/commonlibsse-ng rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set xmake env
+        shell: pwsh
+        run: |
+          echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $env:GITHUB_ENV
+          echo "XMAKE_ROOT=y" >> $env:GITHUB_ENV
+
+      - name: Create xmake cache directories
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/packages" | Out-Null
+          New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}/xmake-global/xmake-cache" | Out-Null
+
+      - name: Cache xmake dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ runner.workspace }}/xmake-global/packages
+            ${{ runner.workspace }}/xmake-global/xmake-cache
+          key: windows-latest-xmake-deps-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', '.gitmodules', 'lib/commonlibsse-ng/xmake.lua', 'lib/commonlibsse-ng/xmake-rules.lua') }}
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+          actions-cache-folder: ${{ runner.workspace }}/xmake-global/xmake-cache
+          actions-cache-key: ".xmake-actions-cache"
+          build-cache: false
+          package-cache: false
+
+      - name: Validate CommonLib submodule
+        shell: pwsh
+        run: |
+          if (!(Test-Path "lib/commonlibsse-ng/xmake.lua")) {
+            Write-Error "Missing CommonLib submodule at lib/commonlibsse-ng. Ensure git submodule is committed and checkout uses recursive submodules."
+            exit 1
+          }
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          xmake repo --update
+          xmake require -y
+
+      - name: Compile plugin
+        shell: pwsh
+        run: |
+          # releasedbg matches the CommonLib prebuilt bundle ABI (see PREBUILT.md).
+          xmake f -y -m releasedbg
+          xmake -y
+
+      - name: Upload SKSE plugin artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: quickpocket-dll
+          path: |
+            build/windows/x64/releasedbg/QuickPocket.dll
+            build/windows/x64/releasedbg/QuickPocket.pdb
+
+  package-mod:
+    runs-on: ubuntu-latest
+    needs: [prepare, build-plugin, compile-scripts, compile-skse]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Download ESP Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: quickpocket-esp
+          path: build/install
+
+      - name: Download Scripts Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: quickpocket-scripts
+          path: build/install/Scripts
+
+      - name: Download DLL Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: quickpocket-dll
+          path: build/install/SKSE/Plugins
+
+      - name: Create package
+        shell: bash
+        run: |
+          mkdir -p build/install/Source/Scripts
+          cp -a LICENSE build/install/QP-LICENSE.md
+          cp -a package/. build/install/
+          cp -a res/Source/Scripts/*.psc build/install/Source/Scripts/
+
+      - name: Zip package
+        uses: vimtor/action-zip@v1.3
+        with:
+          files: build/install/.
+          dest: QuickPocket-${{ needs.prepare.outputs.version }}.zip
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: QuickPocket-${{ needs.prepare.outputs.version }}
+          path: QuickPocket-${{ needs.prepare.outputs.version }}.zip

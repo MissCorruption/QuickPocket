@@ -1,0 +1,37 @@
+FormKey: 000001:QuickPocket.esp
+EditorID: MCMQuickPocket
+VirtualMachineAdapter:
+  Scripts:
+  - Name: QuickPocketMaintenance
+    Properties:
+    - MutagenObjectType: ScriptObjectProperty
+      Name: MCMConfig
+      Object: 000001:QuickPocket.esp
+  - Name: QuickPocketMCM
+    Properties:
+    - MutagenObjectType: ScriptStringProperty
+      Name: ModName
+      Data: QuickPocket
+  FileName: ''
+  Aliases:
+  - Property:
+      Name: ''
+      Object: 000001:QuickPocket.esp
+      Alias: 0
+    Scripts:
+    - Name: SKI_PlayerLoadGameAlias
+    - Name: QuickPocketLoad
+      Properties:
+      - MutagenObjectType: ScriptObjectProperty
+        Name: MaintenanceScript
+        Object: 000001:QuickPocket.esp
+Flags:
+- StartGameEnabled
+- 0x10
+- RunOnce
+NextAliasID: 1
+Aliases:
+- Name: PlayerAlias
+  Flags: []
+  ForcedReference: 000014:Skyrim.esm
+  VoiceTypes: Null

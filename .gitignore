@@ -1,0 +1,21 @@
+## Build artifacts
+build/
+dist/
+.vs/
+.xmake/
+vsxmake*/
+compile_commands.json
+*.zip
+*.user
+
+## Generated game/script outputs
+*.esp
+*.pex
+.release/
+
+## Local environment files
+*.code-workspace
+.vscode/settings.json
+.vscode.bak
+*.bak
+.git.broken.bak/

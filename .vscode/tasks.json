@@ -1,0 +1,94 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "BUILD mod",
+            "type": "shell",
+            "command": "./tools/build.sh",
+            "windows": {
+                "command": "./tools/build.bat"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            }
+        },
+        {
+            "type": "pyro",
+            "projectFile": "res/Source/Scripts/QuickPocket.ppj",
+            "gamePath": "${config:SKYRIM_PATH}",
+            "compilerPath": "${config:CAPRICA_PATH}",
+            "problemMatcher": ["$PapyrusCompiler"],
+            "label": "pyro: Compile Project (QuickPocket.ppj)",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "group": "build"
+        },
+        {
+            "label": "Spriggit: Deserialize ESP",
+            "type": "shell",
+            "command": "mkdir -p build/install && \"${config:SPRIGGIT_PATH}\" deserialize --InputPath res/esp --OutputPath build/install/QuickPocket.esp",
+            "windows": {
+                "command": "if not exist build\\install mkdir build\\install && \"${config:SPRIGGIT_PATH}\" deserialize --InputPath res\\esp --OutputPath build\\install\\QuickPocket.esp"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Spriggit: Serialize ESP",
+            "type": "shell",
+            "command": "\"${config:SPRIGGIT_PATH}\" serialize --InputPath build/install/QuickPocket.esp --OutputPath res/esp --GameRelease SkyrimSE --PackageName Spriggit.Yaml.Skyrim -v 0.36.13",
+            "windows": {
+                "command": "\"${config:SPRIGGIT_PATH}\" serialize --InputPath build\\install\\QuickPocket.esp --OutputPath res\\esp --GameRelease SkyrimSE --PackageName Spriggit.Yaml.Skyrim -v 0.36.13"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "none",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "BUILD all",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "BUILD mod",
+                "Spriggit: Deserialize ESP",
+                "pyro: Compile Project (QuickPocket.ppj)",
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": false
+            }
+        }
+    ]
+}

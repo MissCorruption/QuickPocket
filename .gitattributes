@@ -1,0 +1,4 @@
+# Skyrim/SkyUI translation files must stay UTF-16 LE with a BOM.
+# GitHub and `text=auto` otherwise rewrite them as UTF-8 / change EOLs and break SKSE loading.
+**/Interface/translations/*.txt binary
+**/Interface/Translations/*.txt binary

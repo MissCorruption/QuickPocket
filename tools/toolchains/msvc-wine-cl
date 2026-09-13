@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# xmake on Linux emits -std:c++NN for cl.exe; MSVC ignores those (D9002) and
+# compiles as an older dialect. Rewrite to /std:c++latest, then call msvc-wine.
+set -euo pipefail
+MSVC_BINS="${MSVC_BINS:-$HOME/msvc-bins}"
+CL="$MSVC_BINS/bin/x64/cl"
+if [[ ! -f "$CL" ]]; then
+	echo "msvc-wine cl not found at $CL (set MSVC_BINS)" >&2
+	exit 1
+fi
+args=()
+for a in "$@"; do
+	case "$a" in
+		-std:c++23|-std:c++2b|-std:c++20|-std:c++2a|-std=c++23|-std=c++20) args+=("/std:c++latest") ;;
+		# /Zi talks to mspdbsrv.exe; under Wine that named pipe hangs compiler probes.
+		/Zi|/ZI|-Zi|-ZI) args+=("/Z7") ;;
+		*) args+=("$a") ;;
+	esac
+done
+exec "$CL" "${args[@]}"
