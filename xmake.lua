@@ -22,7 +22,7 @@ end
 set_plat("windows")
 set_arch("x64")
 
-includes("lib/commonlibsse-ng")
+includes("lib/CommonLibSSE-NG")
 
 set_project(PLUGIN)
 set_version(VERSION)
@@ -80,8 +80,6 @@ target(PLUGIN)
     set_installdir("$(projectdir)/build/install")
 
     after_install(function (target)
-        -- Linux is case-sensitive; a leftover Interface/translations would ship
-        -- beside SKSE's Interface/Translations and show up as two folders.
         local installdir = target:installdir()
         local staleTranslations = path.join(installdir, "Interface", "translations")
         if os.isdir(staleTranslations) then

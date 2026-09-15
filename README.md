@@ -40,10 +40,12 @@ git clone --recurse-submodules https://github.com/MissCorruption/QuickPocket.git
 cd QuickPocket
 ```
 
-`--recurse-submodules` is required. If you already cloned without it:
+`--recurse-submodules` is required so CommonLib's nested OpenVR tree is present (needed for VR). `./tools/build.sh` will also initialize it if it is missing.
+
+If you already cloned without it:
 
 ```bash
-git submodule update --init --recursive
+git submodule update --init --recursive lib/CommonLibSSE-NG
 ```
 
 ## Build
@@ -54,11 +56,17 @@ Linux:
 ./tools/build.sh
 ```
 
+Linux uses a Wine prefix at `build/wineprefix` (override with `MSVC_WINEPREFIX`) and stops that wineserver when the script exits, including Ctrl+C. Do not start two builds in the same tree at once.
+
 Windows:
 
 ```bat
 tools\build.bat
 ```
+
+Default mode is `releasedbg`. Pass `debug` or `release` as the first argument, or set `MODE`.
+
+Zip from the install tree: `xmake package`
 
 ## License
 

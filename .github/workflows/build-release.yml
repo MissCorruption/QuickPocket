@@ -173,7 +173,7 @@ jobs:
       - name: CommonLib revision
         id: commonlib
         shell: bash
-        run: echo "sha=$(git -C lib/commonlibsse-ng rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        run: echo "sha=$(git -C lib/CommonLibSSE-NG rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set xmake env
         shell: pwsh
@@ -193,7 +193,7 @@ jobs:
           path: |
             ${{ runner.workspace }}/xmake-global/packages
             ${{ runner.workspace }}/xmake-global/xmake-cache
-          key: windows-latest-xmake-deps-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', '.gitmodules', 'lib/commonlibsse-ng/xmake.lua', 'lib/commonlibsse-ng/xmake-rules.lua') }}
+          key: windows-latest-xmake-deps-${{ steps.commonlib.outputs.sha }}-${{ hashFiles('xmake.lua', '.gitmodules', 'lib/CommonLibSSE-NG/xmake.lua', 'lib/CommonLibSSE-NG/xmake-rules.lua') }}
 
       - name: Setup xmake
         uses: xmake-io/github-action-setup-xmake@v1
@@ -207,8 +207,8 @@ jobs:
       - name: Validate CommonLib submodule
         shell: pwsh
         run: |
-          if (!(Test-Path "lib/commonlibsse-ng/xmake.lua")) {
-            Write-Error "Missing CommonLib submodule at lib/commonlibsse-ng. Ensure git submodule is committed and checkout uses recursive submodules."
+          if (!(Test-Path "lib/CommonLibSSE-NG/xmake.lua")) {
+            Write-Error "Missing CommonLib submodule at lib/CommonLibSSE-NG. Ensure git submodule is committed and checkout uses recursive submodules."
             exit 1
           }
 
